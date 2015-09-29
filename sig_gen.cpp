@@ -1,9 +1,9 @@
 //-----------------------------------------------------------------------------
 // name: sig_gen.cpp
-// desc: real-time sine wave
+// desc: real-time waveforms!
 //
 // author: Nikhil Goel (nmgoel@stanford.edu)
-//   date: fall 2015
+//   date: fall 2015, Music256a taught by Ge Wang (righteous!)
 //   uses: RtAudio by Gary Scavone
 //-----------------------------------------------------------------------------
 #include "RtAudio.h"
@@ -54,13 +54,13 @@ int g_sig = 0;
  * @param outputBuffer Pointer to the buffer that holds the output.
  * @param inputBuffer Pointer to the buffer that holds the input.
  * @param numFrames The number of sample frames held by input buffer
-    and written to output buffer.
+          and written to output buffer.
  * @param streamTime The number of seconds (double) that the signal streams.
  * @param status Notifies if there is an output/input overflow/underflow.
  * @param data Pointer to optional data provided by the client
-    when opening the stream (default = NULL).
-   @return Zero to maintain normal stream. One to stop the stream and drain the
-   output buffer. Two to abort the stream immediately.
+          when opening the stream (default = NULL).
+ * @return Zero to maintain normal stream. One to stop the stream and drain the
+           output buffer. Two to abort the stream immediately.
  */
 int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
      double streamTime, RtAudioStreamStatus status, void *data ) {
@@ -72,38 +72,54 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          SAMPLE *buffer = (SAMPLE *) outputBuffer;
          for(int i = 0; i < numFrames; i++)
          {
-            // generate signal in even-indexed slots of the buffer
+            /* Creates different waveforms based on user input by first generating a signal in the 
+             * even-indexed slots of the buffer. */
             switch(g_sig) {
-                case 1: // sine
+
+                // sine
+                case 1: 
                     buffer[i * MY_CHANNELS] = sin(2 * MY_PIE * g_freq * g_t / MY_SRATE);
                     break;
-                case 2: // saw
-                    break;
-                case 3: // pulse
 
-                    // sample mod period is less than or equal to the width
+                // saw
+                case 2: 
+                    break;
+
+                // pulse    
+                case 3: 
+
+                    /* (Sample % period) <= the width, or delay time, of the wave.
+                     * Produces rectangular wave above the baseline. */
                     if (((int) g_t) % ((int) (MY_SRATE / g_freq)) <= (g_width * 10)) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } 
 
-                    // sample mod period if greater than or equal to the width
+                    /* (Sample % period) >= the width, or delay time, of the wave.
+                     * Produces rectangular wave below the baseline. */                    
                     else if (((int) g_t) % ((int) (MY_SRATE / g_freq)) >= (g_width * 10)) {
                         buffer[i * MY_CHANNELS] = MIN_AMP;
                     }
                     break;
-                case 4: // noise (white noise)
+
+                // noise (white noise to be more specific)    
+                case 4: 
                     buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
                     break;
-                case 5: // impulse
 
-                    // signal sample is at the fundamental period of the given frequency
+                // impulse train    
+                case 5: 
+
+                    // signal sample shoots an impulse at the given frequency's fundamental period
                     if (((int) g_t) % ((int) (MY_SRATE / g_freq)) == 0) { 
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } else {
                         buffer[i * MY_CHANNELS] = BASELINE;
                     }
                     break;
-                default: return 2;
+
+                // if none of the above, stop the stream immediately.   
+                default: 
+                    return 2;
             }
 
              // copy signal into odd-indexed slots of the buffer
@@ -118,7 +134,10 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
 /*
  * @funtion determine_signal Returns an integer based on the type of command given.
- * @param arg command given by user input
+            Allows me to easily use a switch statement in the audio callback function
+            for the different waveforms.
+ * @param argc Number of command line arguments.
+ * @param argv Array of strings containing command line arguments.
  */
 int determine_signal(int argc, const char *argv[]) {
     string arg = string(argv[1]);
@@ -184,6 +203,8 @@ int main(int argc, char const *argv[]) {
     // error: ./sig_gen with no additional arguments
     if (argc <= 1) {
         cout << "Not enough arguments. Must give type of signal generation." << endl;
+        cout << "Input should be of form ./sig_gen [type] [frequency] [width]...";
+        cout << "frequency and width are optional." << endl;
         exit(1);
     }
 
