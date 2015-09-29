@@ -13,17 +13,16 @@ LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 	-framework IOKit -framework Carbon -lstdc++ -lm
 endif
 
+OBJS=   RtAudio.o MyHelloSine.o
 
-OBJS=   RtAudio.o HelloSine.o
+MyHelloSine: $(OBJS)
+	$(CXX) -o MyHelloSine $(OBJS) $(LIBS)
 
-HelloSine: $(OBJS)
-	$(CXX) -o HelloSine $(OBJS) $(LIBS)
-
-HelloSine.o: HelloSine.cpp RtAudio.h
-	$(CXX) $(FLAGS) HelloSine.cpp
+MyHelloSine.o: MyHelloSine.cpp RtAudio.h
+	$(CXX) $(FLAGS) MyHelloSine.cpp
 
 RtAudio.o: RtAudio.h RtAudio.cpp RtError.h
 	$(CXX) $(FLAGS) RtAudio.cpp
 
 clean:
-	rm -f *~ *# *.o HelloSine
+	rm -f *~ *# *.o MyHelloSine
