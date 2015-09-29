@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// name: MyHelloSine.cpp
+// name: sig_gen.cpp
 // desc: real-time sine wave
 //
 // author: Nikhil Goel (nmgoel@stanford.edu)
@@ -72,11 +72,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
 int main(int argc, char const *argv[]) {
 
-    std::cout << "hello" << std::endl;
-
-    // instantiate RtAudio object
-    RtAudio audio;
-
+    RtAudio audio;// = new RtAudio(RtAudio::MACOSX_CORE);
     unsigned int bufferBytes = 0;
 
     // frame size
