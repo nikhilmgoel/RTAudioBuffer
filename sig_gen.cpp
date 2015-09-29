@@ -82,7 +82,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 case 5: // impulse
 
                     // signal sample is at the fundamental period of the given frequency
-                    if (sin(g_t / MY_SRATE) == (1 / g_freq)) { 
+                    if (sin(2 * MY_PIE * g_freq * g_t / MY_SRATE) > 0) { 
                         buffer[i * MY_CHANNELS] = 1;
                     } else {
                         buffer[i * MY_CHANNELS] = 0;
@@ -109,6 +109,7 @@ int determine_signal(int argc, const char *argv[]) {
     string arg = string(argv[1]);
     char *endptr = 0;
 
+    // checks third argument: frequency
     if (argc > 2) {
         g_freq = strtod(argv[2], &endptr);
         if (*endptr != '\0' || endptr == argv[2]) {
@@ -117,6 +118,7 @@ int determine_signal(int argc, const char *argv[]) {
         } 
     }
 
+    // checks fourth argument: width
     if (argc > 3) {
         g_width = strtod(argv[3], &endptr);
         if (*endptr != '\0' || endptr == argv[3]) {
