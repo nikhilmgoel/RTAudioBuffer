@@ -72,6 +72,8 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
 int main(int argc, char const *argv[]) {
 
+    std::cout << "hello" << std::endl;
+
     // instantiate RtAudio object
     RtAudio audio;
 
