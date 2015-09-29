@@ -30,12 +30,13 @@ using namespace std;
 
 /* ----------------------globals--------------------- */
 
-// global for frequency
+// frequency
 SAMPLE g_freq = 440;
 
-// global sample number variable
+// sample number 
 SAMPLE g_t = 0;
 
+// wave width
 SAMPLE g_width = 0;
 
 // type of signal requested by user, enumerated in function determine_signal
@@ -79,10 +80,15 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                     buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
                     break;
                 case 5: // impulse
-                    
+
+                    // signal sample is at the fundamental period of the given frequency
+                    if (sin(g_t / MY_SRATE) == (1 / g_freq)) { 
+                        buffer[i * MY_CHANNELS] = 1;
+                    } else {
+                        buffer[i * MY_CHANNELS] = 0;
+                    }
                     break;
-                default: // any erroneous input in the type argument
-                    return 2;
+                default: return 2;
             }
 
              // copy signal into odd-indexed slots of the buffer
@@ -99,7 +105,25 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
  * @funtion determine_signal Returns an integer based on the type of command given.
  * @param arg command given by user input
  */
-int determine_signal(string arg) {
+int determine_signal(int argc, const char *argv[]) {
+    string arg = string(argv[1]);
+    char *endptr = 0;
+
+    if (argc > 2) {
+        g_freq = strtod(argv[2], &endptr);
+        if (*endptr != '\0' || endptr == argv[2]) {
+            cout << "The frequency you entered is not a double. Using default frequency 440 Hz." << endl;
+            g_freq = 440;
+        } 
+    }
+
+    if (argc > 3) {
+        g_width = strtod(argv[3], &endptr);
+        if (*endptr != '\0' || endptr == argv[3]) {
+            cout << "The width you entered is not a double. Using default width 1." << endl;
+            g_width = 1;
+        } 
+    }
 
     // sine
     if (arg == "--sine") {
@@ -134,20 +158,25 @@ int determine_signal(string arg) {
 
 int main(int argc, char const *argv[]) {
 
-    // error checking for ./sig_gen with no additional arguments
+    // error: ./sig_gen with no additional arguments
     if (argc <= 1) {
         cout << "Not enough arguments. Must give type of signal generation." << endl;
         exit(1);
     }
 
-    // error checking for more than four arguments
+    // error: more than four arguments
     if (argc > 4) {
-        cout << "Too many arguments. Only give command [type] [frequency] [width]." << endl;
-        exit(1);
+        cout << "Ignoring extraneous arguments..." << endl;
     }
 
     // determines which type of signal user wants to generate
-    g_sig = determine_signal(string(argv[1]));
+    g_sig = determine_signal(argc, argv);
+
+    // error: invalid waveform type 
+    if (g_sig < 0) {
+        cout << "Must provide a valid type of waveform. --sine, --saw, --noise, --pulse, --impulse." << endl;
+        exit(1);
+    }
 
     // instantiate RtAudio object
     RtAudio audio;
