@@ -82,8 +82,8 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 case 5: // impulse
 
                     // signal sample is at the fundamental period of the given frequency
-                    if (sin(2 * MY_PIE * g_freq * g_t / MY_SRATE) > 0) { 
-                        buffer[i * MY_CHANNELS] = 1;
+                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) == 0) { 
+                        buffer[i * MY_CHANNELS] = 1.0;
                     } else {
                         buffer[i * MY_CHANNELS] = 0;
                     }
