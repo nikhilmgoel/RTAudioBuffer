@@ -28,6 +28,11 @@ using namespace std;
 
 #define MY_PIE 3.14159265358979
 
+// amplitude definitions
+#define MAX_AMP 1.0
+#define MIN_AMP -1.0
+#define BASELINE 0
+
 /* ----------------------globals--------------------- */
 
 // frequency
@@ -36,8 +41,8 @@ SAMPLE g_freq = 440;
 // sample number 
 SAMPLE g_t = 0;
 
-// wave width
-SAMPLE g_width = 0;
+// wave width (default square wave)
+SAMPLE g_width = 0.5;
 
 // type of signal requested by user, enumerated in function determine_signal
 int g_sig = 0;
@@ -75,6 +80,16 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 case 2: // saw
                     break;
                 case 3: // pulse
+
+                    // sample mod period is less than or equal to the width
+                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) <= (g_width * 10)) {
+                        buffer[i * MY_CHANNELS] = MAX_AMP;
+                    } 
+
+                    // sample mod period if greater than or equal to the width
+                    else if (((int) g_t) % ((int) (MY_SRATE / g_freq)) >= (g_width * 10)) {
+                        buffer[i * MY_CHANNELS] = MIN_AMP;
+                    }
                     break;
                 case 4: // noise (white noise)
                     buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
@@ -83,9 +98,9 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
                     // signal sample is at the fundamental period of the given frequency
                     if (((int) g_t) % ((int) (MY_SRATE / g_freq)) == 0) { 
-                        buffer[i * MY_CHANNELS] = 1.0;
+                        buffer[i * MY_CHANNELS] = MAX_AMP;
                     } else {
-                        buffer[i * MY_CHANNELS] = 0;
+                        buffer[i * MY_CHANNELS] = BASELINE;
                     }
                     break;
                 default: return 2;
@@ -116,6 +131,9 @@ int determine_signal(int argc, const char *argv[]) {
             cout << "The frequency you entered is not a double. Using default frequency 440 Hz." << endl;
             g_freq = 440;
         } 
+
+        // if no width given, use default width
+        if (argc == 3) cout << "No width given. Using 0.5 as default width." << endl;
     }
 
     // checks fourth argument: width
@@ -124,7 +142,10 @@ int determine_signal(int argc, const char *argv[]) {
         if (*endptr != '\0' || endptr == argv[3]) {
             cout << "The width you entered is not a double. Using default width 1." << endl;
             g_width = 1;
-        } 
+        } else if (g_width == 1.0 || g_width == 0) {
+            cout << "Must enter a width in the range (0, 1)." << endl;
+            exit(1);
+        }
     }
 
     // sine
