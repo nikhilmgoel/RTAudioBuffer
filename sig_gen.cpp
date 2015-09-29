@@ -12,7 +12,7 @@
 #include <cstdlib>
 using namespace std;
 
-/* #defines and globals */
+/* ----------------------#defines-------------------- */
 
 // A sample is a discrete time signal derived from a continuous signal
 #define SAMPLE double
@@ -28,11 +28,20 @@ using namespace std;
 
 #define MY_PIE 3.14159265358979
 
+/* ----------------------globals--------------------- */
+
 // global for frequency
 SAMPLE g_freq = 440;
 
 // global sample number variable
 SAMPLE g_t = 0;
+
+SAMPLE g_width = 0;
+
+// type of signal requested by user, enumerated in function determine_signal
+int g_sig = 0;
+
+/*---------------------------------------------------- */
 
 /*
  * @funtion audio_callback The RtAudioCallback function.
@@ -57,8 +66,24 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          SAMPLE *buffer = (SAMPLE *) outputBuffer;
          for(int i = 0; i < numFrames; i++)
          {
-             // generate signal in even-indexed slots of the buffer
-             buffer[i * MY_CHANNELS] = sin(2 * MY_PIE * g_freq * g_t / MY_SRATE);
+            // generate signal in even-indexed slots of the buffer
+            switch(g_sig) {
+                case 1: // sine
+                    buffer[i * MY_CHANNELS] = sin(2 * MY_PIE * g_freq * g_t / MY_SRATE);
+                    break;
+                case 2: // saw
+                    break;
+                case 3: // pulse
+                    break;
+                case 4: // noise (white noise)
+                    buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
+                    break;
+                case 5: // impulse
+                    
+                    break;
+                default: // any erroneous input in the type argument
+                    return 2;
+            }
 
              // copy signal into odd-indexed slots of the buffer
              for(int j = 1; j < MY_CHANNELS; j++)
@@ -70,17 +95,66 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          return 0;
 }
 
+/*
+ * @funtion determine_signal Returns an integer based on the type of command given.
+ * @param arg command given by user input
+ */
+int determine_signal(string arg) {
+
+    // sine
+    if (arg == "--sine") {
+        return 1;
+    }
+
+    // saw
+    else if (arg == "--saw"){
+        return 2;
+    }
+
+    // pulse
+    else if (arg == "--pulse"){
+        return 3;
+    }
+
+    // noise
+    else if (arg == "--noise"){
+        return 4;
+    }
+
+    //impulse
+    else if (arg == "--impulse") {
+        return 5;
+    } 
+
+    // arg is some other input not defined by this program
+    else {
+        return -1;
+    }
+}
+
 int main(int argc, char const *argv[]) {
 
-<<<<<<< HEAD:MyHelloSine.cpp
-    RtAudio audio = new RtAudio(RtAudio::WINDOWS_ASIO);
-=======
-    RtAudio audio;// = new RtAudio(RtAudio::MACOSX_CORE);
->>>>>>> 6d27b44e474e41242774e452eafc836caa1d85f3:sig_gen.cpp
-    unsigned int bufferBytes = 0;
+    // error checking for ./sig_gen with no additional arguments
+    if (argc <= 1) {
+        cout << "Not enough arguments. Must give type of signal generation." << endl;
+        exit(1);
+    }
+
+    // error checking for more than four arguments
+    if (argc > 4) {
+        cout << "Too many arguments. Only give command [type] [frequency] [width]." << endl;
+        exit(1);
+    }
+
+    // determines which type of signal user wants to generate
+    g_sig = determine_signal(string(argv[1]));
+
+    // instantiate RtAudio object
+    RtAudio audio;
 
     // frame size
     unsigned int bufferFrames = 512;
+    unsigned int bufferBytes = 0;
 
     // check for audio devices
     if(audio.getDeviceCount() < 1)
@@ -90,7 +164,7 @@ int main(int argc, char const *argv[]) {
     }
 
     // let RtAudio print messages to stderr.
-    //audio.showWarnings(true);
+    audio.showWarnings(true);
 
     // set input and output parameters
     RtAudio::StreamParameters iParams, oParams;
