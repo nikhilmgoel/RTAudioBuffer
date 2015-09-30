@@ -63,28 +63,21 @@ int g_sig = 0;
            output buffer. Two to abort the stream immediately.
  */
 int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
-     double streamTime, RtAudioStreamStatus status, void *data ) {
+     double streamTime, RtAudioStreamStatus status, void *data) {
 
-         // fundamental period of the wave
+         // Fundamental period of the wave.
          double period = MY_SRATE / g_freq;
 
-         // the position of the current sample relative to the fundamental period
+         // Position of the current sample relative to the current wave period.
          int sample_pos = (int) g_t % (int) period;
 
-         /* The second part of a saw tooth uses the remainder as the remaining width 
-            to travel before hitting the baseline. */
+         // Difference between period and the width. Used by the right part of a saw tooth.
          double rmdr = period - g_width;
 
-         // Hypotenuse of the left portion of the saw tooth, determined by width and fixed height of 2. 
-         double left_hypotenuse = sqrt((g_width * g_width) + 4);
-
-         // Hypotenuse of the left portion of the saw tooth, determined by rmdr and fixed height of 2.
-         double right_hypotenuse = sqrt((rmdr * rmdr) + 4);
-
-         // the difference in value between consecutive samples for the left portion of the saw
+         // Difference in value between consecutive samples for the left portion of the saw.
          double left_sample_step = (MAX_AMP * 2) / g_width;
 
-         // the difference in value between consecutive samples for the right portion of the saw
+         // Difference in value between consecutive samples for the right portion of the saw.
          double right_sample_step = (MAX_AMP * 2) / rmdr;
 
          // stderr prints info and err messages (info about callback here)
@@ -106,16 +99,16 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 // saw
                 case 2: 
 
-                    /* (Sample % period) <= the width, or delay time, of the wave.
-                     * Produces left portion of saw wave (pos. slope). */
+                    /* Produces left portion of saw wave (pos. slope). Steps up the left portion's 
+                       hypotenuse with values based on the current sample position. */
                     if (sample_pos <= g_width) {
-                        buffer[i * MY_CHANNELS] = MAX_AMP;
+                        buffer[i * MY_CHANNELS] = left_sample_step * sample_pos;
                     } 
 
-                    /* (Sample % period) >= the width, or delay time, of the wave.
-                     * Produces right portion of saw wave (neg. slope). */                    
-                    else if (sample_pos >= g_width) {
-                        buffer[i * MY_CHANNELS] = MIN_AMP;
+                    /* Produces right portion of saw wave (neg. slope). Steps down the right portion's
+                       hypotenuse. Uses the difference of the period and the current position. */                    
+                    else {
+                        buffer[i * MY_CHANNELS] = right_sample_step * (period - sample_pos);
                     }
                     break;
 
