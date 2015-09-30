@@ -33,6 +33,9 @@ using namespace std;
 #define MIN_AMP -1.0
 #define BASELINE 0
 
+// a width multiplier to elongate the sound of the waves
+#define WIDTH_MULTIPLIER 10
+
 /* ----------------------globals--------------------- */
 
 // frequency
@@ -87,7 +90,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          SAMPLE *buffer = (SAMPLE *) outputBuffer;
          for(int i = 0; i < numFrames; i++)
          {
-            /* Creates different waveforms based on user input by first generating a signal in the 
+            /* Create different waveforms based on user input by first generating a signal in the 
              * even-indexed slots of the buffer. */
             switch(g_sig) {
 
@@ -170,7 +173,7 @@ int determine_signal(int argc, const char *argv[]) {
     string arg = string(argv[1]);
     char *endptr = 0;
 
-    // checks third argument: frequency
+    // check third argument: frequency
     if (argc > 2) {
         g_freq = strtod(argv[2], &endptr);
         if (*endptr != '\0' || endptr == argv[2]) {
@@ -182,7 +185,7 @@ int determine_signal(int argc, const char *argv[]) {
         if (argc == 3) cout << "No width given. Using 0.5 as default width." << endl;
     }
 
-    // checks fourth argument: width
+    // check fourth argument: width
     if (argc > 3) {
         g_width = strtod(argv[3], &endptr);
         if (*endptr != '\0' || endptr == argv[3]) {
@@ -192,7 +195,11 @@ int determine_signal(int argc, const char *argv[]) {
             cout << "Must enter a width in the range (0, 1)." << endl;
             exit(1);
         }
+
+        g_width *= WIDTH_MULTIPLIER;
     }
+
+    /* check second argument: type of waveform */ 
 
     // sine
     if (arg == "--sine") {
