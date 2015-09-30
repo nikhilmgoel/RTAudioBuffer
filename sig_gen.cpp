@@ -133,7 +133,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
                 // noise (white noise to be more specific)    
                 case 4: 
-                    buffer[i * MY_CHANNELS] = (rand() % 100) / 100;
+                    buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
                     break;
 
                 // impulse train    
@@ -163,14 +163,11 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 }
 
 /*
- * @funtion determine_signal Returns an integer based on the type of command given.
-            Allows me to easily use a switch statement in the audio callback function
-            for the different waveforms.
+ * @funtion check_args Provides error-checking and robustness on command line arguments given by a user.
  * @param argc Number of command line arguments.
- * @param argv Array of strings containing command line arguments.
+ * @param arg Array of strings containing command line arguments.
  */
-int determine_signal(int argc, const char *argv[]) {
-    string arg = string(argv[1]);
+void check_args(int argc, const char* argv[]) {
     char *endptr = 0;
 
     // check third argument: frequency
@@ -195,9 +192,32 @@ int determine_signal(int argc, const char *argv[]) {
             cout << "Must enter a width in the range (0, 1)." << endl;
             exit(1);
         }
-
-        g_width *= WIDTH_MULTIPLIER;
     }
+
+    // check fifth argument: mic/line input
+    if (argc > 4)
+    {
+        if (strcmp(argv[4], "--input") != 0) {
+            cout << "--input is the only acceptable flag after the frequency and width arguments." << endl;
+            cout << " args must be in order: ./sig_gen [type] [frequency] [width] --input" << endl;
+            exit(1);
+        }
+    }
+}
+
+/*
+ * @funtion determine_signal Returns an integer based on the type of command given.
+            Allows me to easily use a switch statement in the audio callback function
+            for the different waveforms.
+ * @param argc Number of command line arguments.
+ * @param argv Array of strings containing command line arguments.
+ */
+int determine_signal(int argc, const char *argv[]) {
+    
+    // checks command line arguments other than waveform type
+    check_args(argc, argv);
+
+    string arg = string(argv[1]);
 
     /* check second argument: type of waveform */ 
 
@@ -228,6 +248,7 @@ int determine_signal(int argc, const char *argv[]) {
 
     // arg is some other input not defined by this program
     else {
+        cout << "Must provide a valid type of waveform. --sine, --saw, --noise, --pulse, --impulse." << endl;
         return -1;
     }
 }
@@ -243,18 +264,15 @@ int main(int argc, char const *argv[]) {
     }
 
     // error: more than four arguments
-    if (argc > 4) {
+    if (argc > 5) {
         cout << "Ignoring extraneous arguments..." << endl;
     }
 
+    // apply the width mutliplier
+    g_width *= WIDTH_MULTIPLIER;
+
     // determines which type of signal user wants to generate
     g_sig = determine_signal(argc, argv);
-
-    // error: invalid waveform type 
-    if (g_sig < 0) {
-        cout << "Must provide a valid type of waveform. --sine, --saw, --noise, --pulse, --impulse." << endl;
-        exit(1);
-    }
 
     // instantiate RtAudio object
     RtAudio audio;
