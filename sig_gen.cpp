@@ -83,6 +83,18 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
                 // saw
                 case 2: 
+
+                    /* (Sample % period) <= the width, or delay time, of the wave.
+                     * Produces saw wave above the baseline. */
+                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) <= g_width) {
+                        buffer[i * MY_CHANNELS] = MAX_AMP;
+                    } 
+
+                    /* (Sample % period) >= the width, or delay time, of the wave.
+                     * Produces saw wave below the baseline. */                    
+                    else if (((int) g_t) % ((int) (MY_SRATE / g_freq)) >= g_width) {
+                        buffer[i * MY_CHANNELS] = MIN_AMP;
+                    }
                     break;
 
                 // pulse    
@@ -90,13 +102,13 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
                     /* (Sample % period) <= the width, or delay time, of the wave.
                      * Produces rectangular wave above the baseline. */
-                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) <= (g_width * 10)) {
+                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) <= g_width) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } 
 
                     /* (Sample % period) >= the width, or delay time, of the wave.
                      * Produces rectangular wave below the baseline. */                    
-                    else if (((int) g_t) % ((int) (MY_SRATE / g_freq)) >= (g_width * 10)) {
+                    else if (((int) g_t) % ((int) (MY_SRATE / g_freq)) >= g_width) {
                         buffer[i * MY_CHANNELS] = MIN_AMP;
                     }
                     break;
@@ -161,7 +173,7 @@ int determine_signal(int argc, const char *argv[]) {
         if (*endptr != '\0' || endptr == argv[3]) {
             cout << "The width you entered is not a double. Using default width 1." << endl;
             g_width = 1;
-        } else if (g_width == 1.0 || g_width == 0) {
+        } else if (g_width >= 1.0 || g_width <= 0) {
             cout << "Must enter a width in the range (0, 1)." << endl;
             exit(1);
         }
