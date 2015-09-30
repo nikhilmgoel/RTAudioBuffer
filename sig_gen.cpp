@@ -50,6 +50,9 @@ SAMPLE g_width = 0.5;
 // type of signal requested by user, enumerated in function determine_signal
 int g_sig = 0;
 
+// --input flag
+bool flag = false;
+
 /*---------------------------------------------------- */
 
 /*
@@ -72,7 +75,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          double period = MY_SRATE / g_freq;
 
          // Position of the current sample relative to the current wave period.
-         int sample_pos = (int) g_t % (int) period;
+         double sample_pos = fmod(g_t, period);
 
          // Difference between period and the width. Used by the right part of a saw tooth.
          double rmdr = period - g_width;
@@ -88,7 +91,9 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
          // outputBuffer points to array of SAMPLEs
          SAMPLE *buffer = (SAMPLE *) outputBuffer;
-         for(int i = 0; i < numFrames; i++)
+         SAMPLE *ibuffer = (SAMPLE *) inputBuffer;
+
+         for (int i = 0; i < numFrames; i++)
          {
             /* Create different waveforms based on user input by first generating a signal in the 
              * even-indexed slots of the buffer. */
@@ -150,6 +155,11 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 // if none of the above, stop the stream immediately.   
                 default: 
                     return 2;
+
+                // one ring to modulate them all
+                if (flag) {
+                    buffer[i * MY_CHANNELS] *= ibuffer[i * MY_CHANNELS];
+                }
             }
 
              // copy signal into odd-indexed slots of the buffer
