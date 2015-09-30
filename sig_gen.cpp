@@ -72,16 +72,13 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
      double streamTime, RtAudioStreamStatus status, void *data) {
 
          // Fundamental period of the wave.
-         double period = MY_SRATE / g_freq;
-
-         // Position of the current sample relative to the current wave period.
-         double sample_pos = fmod(g_t, period);
+         double period = 1 / g_freq;
 
          // Difference between period and the width. Used by the right part of a saw tooth.
-         double rmdr = period - g_width;
+         double rmdr = period - (g_width * period);
 
          // Difference in value between consecutive samples for the left portion of the saw.
-         double left_sample_step = (MAX_AMP * 2) / g_width;
+         double left_sample_step = (MAX_AMP * 2) / (g_width * period);
 
          // Difference in value between consecutive samples for the right portion of the saw.
          double right_sample_step = (MAX_AMP * 2) / rmdr;
@@ -95,6 +92,9 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
          for (int i = 0; i < numFrames; i++)
          {
+            // Position of the current sample relative to the current wave period.
+            double sample_pos = fmod(g_t / MY_SRATE, period);
+            
             /* Create different waveforms based on user input by first generating a signal in the 
              * even-indexed slots of the buffer. */
             switch(g_sig) {
@@ -109,7 +109,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
                     /* Produces left portion of saw wave (pos. slope). Steps up the left portion's 
                        hypotenuse with values based on the current sample position. */
-                    if (sample_pos <= g_width) {
+                    if (sample_pos <= g_width * period) {
                         buffer[i * MY_CHANNELS] = left_sample_step * sample_pos;
                     } 
 
@@ -121,17 +121,17 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                     break;
 
                 // pulse    
-                case 3: 
+                case 3:
 
                     /* (Sample % period) <= the width, or delay time, of the wave.
                      * Produces rectangular wave above the baseline. */
-                    if (sample_pos <= g_width) {
+                    if (sample_pos <= g_width * period) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } 
 
                     /* (Sample % period) >= the width, or delay time, of the wave.
                      * Produces rectangular wave below the baseline. */                    
-                    else if (sample_pos >= g_width) {
+                    else if (sample_pos >= g_width * period) {
                         buffer[i * MY_CHANNELS] = MIN_AMP;
                     }
                     break;
