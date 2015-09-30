@@ -65,6 +65,28 @@ int g_sig = 0;
 int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
      double streamTime, RtAudioStreamStatus status, void *data ) {
 
+         // fundamental period of the wave
+         double period = MY_SRATE / g_freq;
+
+         // the position of the current sample relative to the fundamental period
+         int sample_pos = (int) g_t % (int) period;
+
+         /* The second part of a saw tooth uses the remainder as the remaining width 
+            to travel before hitting the baseline. */
+         double rmdr = period - g_width;
+
+         // Hypotenuse of the left portion of the saw tooth, determined by width and fixed height of 2. 
+         double left_hypotenuse = sqrt((g_width * g_width) + 4);
+
+         // Hypotenuse of the left portion of the saw tooth, determined by rmdr and fixed height of 2.
+         double right_hypotenuse = sqrt((rmdr * rmdr) + 4);
+
+         // the difference in value between consecutive samples for the left portion of the saw
+         double left_sample_step = (MAX_AMP * 2) / g_width;
+
+         // the difference in value between consecutive samples for the right portion of the saw
+         double right_sample_step = (MAX_AMP * 2) / rmdr;
+
          // stderr prints info and err messages (info about callback here)
          cerr << ".";
 
@@ -85,14 +107,14 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 case 2: 
 
                     /* (Sample % period) <= the width, or delay time, of the wave.
-                     * Produces saw wave above the baseline. */
-                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) <= g_width) {
+                     * Produces left portion of saw wave (pos. slope). */
+                    if (sample_pos <= g_width) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } 
 
                     /* (Sample % period) >= the width, or delay time, of the wave.
-                     * Produces saw wave below the baseline. */                    
-                    else if (((int) g_t) % ((int) (MY_SRATE / g_freq)) >= g_width) {
+                     * Produces right portion of saw wave (neg. slope). */                    
+                    else if (sample_pos >= g_width) {
                         buffer[i * MY_CHANNELS] = MIN_AMP;
                     }
                     break;
@@ -102,27 +124,27 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 
                     /* (Sample % period) <= the width, or delay time, of the wave.
                      * Produces rectangular wave above the baseline. */
-                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) <= g_width) {
+                    if (sample_pos <= g_width) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } 
 
                     /* (Sample % period) >= the width, or delay time, of the wave.
                      * Produces rectangular wave below the baseline. */                    
-                    else if (((int) g_t) % ((int) (MY_SRATE / g_freq)) >= g_width) {
+                    else if (sample_pos >= g_width) {
                         buffer[i * MY_CHANNELS] = MIN_AMP;
                     }
                     break;
 
                 // noise (white noise to be more specific)    
                 case 4: 
-                    buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
+                    buffer[i * MY_CHANNELS] = (rand() % 100) / 100;
                     break;
 
                 // impulse train    
                 case 5: 
 
                     // signal sample shoots an impulse at the given frequency's fundamental period
-                    if (((int) g_t) % ((int) (MY_SRATE / g_freq)) == 0) { 
+                    if (sample_pos == 0) { 
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } else {
                         buffer[i * MY_CHANNELS] = BASELINE;
