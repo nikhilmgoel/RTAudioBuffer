@@ -34,7 +34,7 @@ using namespace std;
 #define BASELINE 0
 
 // a width multiplier to elongate the sound of the waves
-#define WIDTH_MULTIPLIER 10
+#define WIDTH_MULTIPLIER 1
 
 /* ----------------------globals--------------------- */
 
