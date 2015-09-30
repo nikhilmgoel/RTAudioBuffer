@@ -94,7 +94,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          {
             // Position of the current sample relative to the current wave period.
             double sample_pos = fmod(g_t / MY_SRATE, period);
-            
+
             /* Create different waveforms based on user input by first generating a signal in the 
              * even-indexed slots of the buffer. */
             switch(g_sig) {
@@ -145,7 +145,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 case 5: 
 
                     // signal sample shoots an impulse at the given frequency's fundamental period
-                    if (sample_pos == 0) { 
+                    if (fmod(g_t, round(period * MY_SRATE)) == 0) { 
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } else {
                         buffer[i * MY_CHANNELS] = BASELINE;
