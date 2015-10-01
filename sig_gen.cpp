@@ -123,20 +123,20 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 // pulse
                 case 3:
 
-                    /* (Sample % period) <= the width, or delay time, of the wave.
+                    /* (Sample % period) <= delay time of the wave.
                      * Produces rectangular wave above the baseline. */
                     if (sample_pos <= g_width * period) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     }
 
-                    /* (Sample % period) >= the width, or delay time, of the wave.
+                    /* (Sample % period) >= delay time of the wave.
                      * Produces rectangular wave below the baseline. */
                     else if (sample_pos >= g_width * period) {
                         buffer[i * MY_CHANNELS] = MIN_AMP;
                     }
                     break;
 
-                // noise (white noise to be more specific)
+                // noise
                 case 4:
                     buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
                     break;
@@ -156,7 +156,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 default:
                     return 2;
 
-                // one ring to modulate them all
+                // one ring to modulate them all (multiplies audio input by wave)
                 if (flag) {
                     buffer[i * MY_CHANNELS] *= ibuffer[i * MY_CHANNELS];
                 }
@@ -178,14 +178,23 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
  * @param arg Array of strings containing command line arguments.
  */
 void check_args(int argc, const char* argv[]) {
+
+    // error: ./sig_gen with no additional arguments
+    if (argc <= 1) {
+        cout << "Not enough arguments. Must at least give type of wave." << endl;
+        cout << "Input should be of form ./sig_gen [type] [frequency] [width] --input ... ";
+        cout << "where [frequency], [width], and --input are optional." << endl;
+        exit(1);
+    }
+
     char *endptr = 0;
 
     // check third argument: frequency
     if (argc > 2) {
         g_freq = strtod(argv[2], &endptr);
         if (*endptr != '\0' || endptr == argv[2]) {
-            cout << "The frequency you entered is not a double. Using default frequency 440 Hz." << endl;
-            g_freq = 440;
+            cout << "The frequency you entered is not a double." << endl;
+            exit(1);
         }
 
         // if no width given, use default width
@@ -196,8 +205,8 @@ void check_args(int argc, const char* argv[]) {
     if (argc > 3) {
         g_width = strtod(argv[3], &endptr);
         if (*endptr != '\0' || endptr == argv[3]) {
-            cout << "The width you entered is not a double. Using default width 1." << endl;
-            g_width = 1;
+            cout << "The width you entered is not a double." << endl;
+            exit(1);
         } else if (g_width >= 1.0 || g_width <= 0) {
             cout << "Must enter a width in the range (0, 1)." << endl;
             exit(1);
@@ -207,13 +216,18 @@ void check_args(int argc, const char* argv[]) {
     // check fifth argument: mic/line input
     if (argc > 4)
     {
-        if (strcmp(argv[4], "--input") != 0) {
-            cout << "--input is the only acceptable flag after the frequency and width arguments." << endl;
-            cout << " args must be in order: ./sig_gen [type] [frequency] [width] --input" << endl;
-            exit(1);
-        } else {
+        if (strcmp(argv[4], "--input") == 0) {
             flag = true;
+        } else {
+            cout << "--input is the only acceptable flag after the frequency and width arguments." << endl;
+            cout << "Args must be in order: ./sig_gen [type] [frequency] [width] --input" << endl;
+            cout << "Proceeding with no input functionality." << endl;
         }
+    }
+
+    // error: more than five arguments
+    if (argc > 5) {
+        cout << "Ignoring extraneous arguments..." << endl;
     }
 }
 
@@ -267,27 +281,14 @@ int determine_signal(int argc, const char *argv[]) {
 
 int main(int argc, char const *argv[]) {
 
-    // error: ./sig_gen with no additional arguments
-    if (argc <= 1) {
-        cout << "Not enough arguments. Must give type of signal generation." << endl;
-        cout << "Input should be of form ./sig_gen [type] [frequency] [width]...";
-        cout << "frequency and width are optional." << endl;
-        exit(1);
-    }
-
-    // error: more than four arguments
-    if (argc > 5) {
-        cout << "Ignoring extraneous arguments..." << endl;
-    }
-
-    // apply the width mutliplier
-    g_width *= WIDTH_MULTIPLIER;
-
     // determines which type of signal user wants to generate
     g_sig = determine_signal(argc, argv);
 
     // instantiate RtAudio object
     RtAudio audio;
+
+    // apply the width mutliplier
+    g_width *= WIDTH_MULTIPLIER;
 
     // frame size
     unsigned int bufferFrames = 512;
