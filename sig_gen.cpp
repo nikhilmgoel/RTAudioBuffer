@@ -173,79 +173,15 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
 }
 
 /*
- * @funtion check_args Provides error-checking and robustness on command line arguments given by a user.
- * @param argc Number of command line arguments.
- * @param arg Array of strings containing command line arguments.
- */
-void check_args(int argc, const char* argv[]) {
-
-    // error: ./sig_gen with no additional arguments
-    if (argc <= 1) {
-        cout << "Not enough arguments. Must at least give type of wave." << endl;
-        cout << "Input should be of form ./sig_gen [type] [frequency] [width] --input ... ";
-        cout << "where [frequency], [width], and --input are optional." << endl;
-        exit(1);
-    }
-
-    char *endptr = 0;
-
-    // check third argument: frequency
-    if (argc > 2) {
-        g_freq = strtod(argv[2], &endptr);
-        if (*endptr != '\0' || endptr == argv[2]) {
-            cout << "The frequency you entered is not a double." << endl;
-            exit(1);
-        }
-
-        // if no width given, use default width
-        if (argc == 3) cout << "No width given. Using 0.5 as default width." << endl;
-    }
-
-    // check fourth argument: width
-    if (argc > 3) {
-        g_width = strtod(argv[3], &endptr);
-        if (*endptr != '\0' || endptr == argv[3]) {
-            cout << "The width you entered is not a double." << endl;
-            exit(1);
-        } else if (g_width >= 1.0 || g_width <= 0) {
-            cout << "Must enter a width in the range (0, 1)." << endl;
-            exit(1);
-        }
-    }
-
-    // check fifth argument: mic/line input
-    if (argc > 4)
-    {
-        if (strcmp(argv[4], "--input") == 0) {
-            flag = true;
-        } else {
-            cout << "--input is the only acceptable flag after the frequency and width arguments." << endl;
-            cout << "Args must be in order: ./sig_gen [type] [frequency] [width] --input" << endl;
-            cout << "Proceeding with no input functionality." << endl;
-        }
-    }
-
-    // error: more than five arguments
-    if (argc > 5) {
-        cout << "Ignoring extraneous arguments..." << endl;
-    }
-}
-
-/*
  * @funtion determine_signal Returns an integer based on the type of command given.
             Allows me to easily use a switch statement in the audio callback function
             for the different waveforms.
  * @param argc Number of command line arguments.
  * @param argv Array of strings containing command line arguments.
  */
-int determine_signal(int argc, const char *argv[]) {
+int determine_signal(int argc, const char *type) {
 
-    // checks command line arguments other than waveform type
-    check_args(argc, argv);
-
-    string arg = string(argv[1]);
-
-    /* check second argument: type of waveform */
+    string arg = string(type);
 
     // sine
     if (arg == "--sine") {
@@ -279,13 +215,98 @@ int determine_signal(int argc, const char *argv[]) {
     }
 }
 
+/*
+ * @funtion check_args Provides error-checking and robustness on command line arguments given by a user.
+ * @param argc Number of command line arguments.
+ * @param arg Array of strings containing command line arguments.
+ * @return -1 if any errors. Returns integer between and including 1 and 5 if there the args are properly formed.
+ */
+int check_args(int argc, const char* argv[]) {
+
+    char *endptr = 0;
+
+        // error: ./sig_gen with no additional arguments
+        if (argc <= 1) {
+            cout << "Not enough arguments. Must at least give type of wave." << endl;
+            cout << "Input should be of form ./sig_gen [type] [frequency] [width] --input ... ";
+            cout << "where [frequency], [width], and --input are optional." << endl;
+            return -1;
+        }
+
+        // check second argument: type
+        if (argc > 1) {
+            g_sig = determine_signal(argc, argv[1]);
+            if (g_sig == -1) return g_sig;
+
+            if (argc == 2) {
+                cout << "No frequency given. Using 440Hz as default frequency." << endl;
+                cout << "No width given. Using 0.5 as default width." << endl;
+            }
+        }
+
+        // check third argument: frequency    
+        if (argc > 2) {
+
+            // check for input flag
+            if (strcmp(argv[2], "--input") == 0) {
+                flag = true;
+                cout << "No frequency given. Using 440Hz as default frequency." << endl;
+            } 
+
+            // check for frequency
+            else {
+                g_freq = strtod(argv[2], &endptr);
+                if (*endptr != '\0' || endptr == argv[2]) {
+                    cout << "The frequency you entered is not a double." << endl;
+                    return -1;
+                }
+            }
+
+            // no width given, use default width
+            cout << "No width given. Using 0.5 as default width." << endl;
+        }
+        
+        // check fourth argument: width
+        if (argc > 3) {
+
+            // check for input flag
+            if (strcmp(argv[3], "--input") == 0) {
+                flag = true;
+            }
+
+            // check width
+            else {
+                g_width = strtod(argv[3], &endptr);
+                if ((*endptr != '\0' || endptr == argv[3]) || (g_width >= 1.0 || g_width <= 0)) {
+                    cout << "The width must be a double in the range (0, 1)." << endl;
+                    return -1;
+                } 
+            }
+        }
+
+        // check fifth argument: can only be input flag
+        if (argc > 4) {
+            if (strcmp(argv[4], "--input") == 0) {
+                flag = true;
+            } else {
+                cout << "--input is the only acceptable flag after the frequency and width arguments." << endl;
+                cout << "Proceeding with no input functionality." << endl;
+            }
+        }
+
+        // error: more than five arguments
+        if (argc > 5) cout << "Ignoring extraneous arguments..." << endl;
+
+        return g_sig;
+}
+
 int main(int argc, char const *argv[]) {
 
-    // determines which type of signal user wants to generate
-    g_sig = determine_signal(argc, argv);
+    // checks the command line args and determines the desired signal
+    if ((g_sig = check_args(argc, argv)) == -1) exit(1);
 
     // instantiate RtAudio object
-    RtAudio audio;
+    RtAudio *audio = new RtAudio(RtAudio::MACOSX_CORE);
 
     // apply the width mutliplier
     g_width *= WIDTH_MULTIPLIER;
@@ -295,21 +316,21 @@ int main(int argc, char const *argv[]) {
     unsigned int bufferBytes = 0;
 
     // check for audio devices
-    if(audio.getDeviceCount() < 1)
+    if(audio->getDeviceCount() < 1)
     {
         cout << "no audio devices found!" << endl;
         exit(1);
     }
 
     // let RtAudio print messages to stderr.
-    audio.showWarnings(true);
+    audio->showWarnings(true);
 
     // set input and output parameters
     RtAudio::StreamParameters iParams, oParams;
-    iParams.deviceId = audio.getDefaultInputDevice();
+    iParams.deviceId = audio->getDefaultInputDevice();
     iParams.nChannels = MY_CHANNELS;
     iParams.firstChannel = 0;
-    oParams.deviceId = audio.getDefaultOutputDevice();
+    oParams.deviceId = audio->getDefaultOutputDevice();
     oParams.nChannels = MY_CHANNELS;
     oParams.firstChannel = 0;
 
@@ -318,7 +339,7 @@ int main(int argc, char const *argv[]) {
 
     try {
         // open a stream
-        audio.openStream(&oParams, &iParams, MY_FORMAT, MY_SRATE, &bufferFrames,
+        audio->openStream(&oParams, &iParams, MY_FORMAT, MY_SRATE, &bufferFrames,
             &audio_callback, (void *) &bufferBytes, &options);
     }
     catch(RtError& e)
@@ -331,12 +352,12 @@ int main(int argc, char const *argv[]) {
     bufferBytes = bufferFrames * MY_CHANNELS * sizeof(SAMPLE);
 
     // test RtAudio functionality for reporting latency.
-    cout << "stream latency: " << audio.getStreamLatency() << " frames" << endl;
+    cout << "stream latency: " << audio->getStreamLatency() << " frames" << endl;
 
     // go for it
     try {
         // start stream
-        audio.startStream();
+        audio->startStream();
 
         // get input
         char input;
@@ -344,7 +365,7 @@ int main(int argc, char const *argv[]) {
         std::cin.get(input);
 
         // stop the stream.
-        audio.stopStream();
+        audio->stopStream();
     }
     catch(RtError& e)
     {
@@ -355,8 +376,8 @@ int main(int argc, char const *argv[]) {
 
     cleanup:
         // close if open
-        if(audio.isStreamOpen())
-            audio.closeStream();
+        if(audio->isStreamOpen())
+            audio->closeStream();
 
     return 0;
 }
