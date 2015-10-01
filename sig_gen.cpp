@@ -41,7 +41,7 @@ using namespace std;
 // frequency
 SAMPLE g_freq = 440;
 
-// sample number 
+// sample number
 SAMPLE g_t = 0;
 
 // wave width (default square wave)
@@ -95,65 +95,65 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
             // Position of the current sample relative to the current wave period.
             double sample_pos = fmod(g_t / MY_SRATE, period);
 
-            /* Create different waveforms based on user input by first generating a signal in the 
+            /* Create different waveforms based on user input by first generating a signal in the
              * even-indexed slots of the buffer. */
             switch(g_sig) {
 
                 // sine
-                case 1: 
+                case 1:
                     buffer[i * MY_CHANNELS] = sin(2 * MY_PIE * g_freq * g_t / MY_SRATE);
                     break;
 
                 // saw
-                case 2: 
+                case 2:
 
-                    /* Produces left portion of saw wave (pos. slope). Steps up the left portion's 
+                    /* Produces left portion of saw wave (pos. slope). Steps up the left portion's
                        hypotenuse with values based on the current sample position. */
                     if (sample_pos <= g_width * period) {
                         buffer[i * MY_CHANNELS] = left_sample_step * sample_pos;
-                    } 
+                    }
 
                     /* Produces right portion of saw wave (neg. slope). Steps down the right portion's
-                       hypotenuse. Uses the difference of the period and the current position. */                    
+                       hypotenuse. Uses the difference of the period and the current position. */
                     else {
                         buffer[i * MY_CHANNELS] = right_sample_step * (period - sample_pos);
                     }
                     break;
 
-                // pulse    
+                // pulse
                 case 3:
 
                     /* (Sample % period) <= the width, or delay time, of the wave.
                      * Produces rectangular wave above the baseline. */
                     if (sample_pos <= g_width * period) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
-                    } 
+                    }
 
                     /* (Sample % period) >= the width, or delay time, of the wave.
-                     * Produces rectangular wave below the baseline. */                    
+                     * Produces rectangular wave below the baseline. */
                     else if (sample_pos >= g_width * period) {
                         buffer[i * MY_CHANNELS] = MIN_AMP;
                     }
                     break;
 
-                // noise (white noise to be more specific)    
-                case 4: 
+                // noise (white noise to be more specific)
+                case 4:
                     buffer[i * MY_CHANNELS] = (rand() % 100) / 10;
                     break;
 
-                // impulse train    
-                case 5: 
+                // impulse train
+                case 5:
 
                     // signal sample shoots an impulse at the given frequency's fundamental period
-                    if (fmod(g_t, round(period * MY_SRATE)) == 0) { 
+                    if (fmod(g_t, round(period * MY_SRATE)) == 0) {
                         buffer[i * MY_CHANNELS] = MAX_AMP;
                     } else {
                         buffer[i * MY_CHANNELS] = BASELINE;
                     }
                     break;
 
-                // if none of the above, stop the stream immediately.   
-                default: 
+                // if none of the above, stop the stream immediately.
+                default:
                     return 2;
 
                 // one ring to modulate them all
@@ -186,7 +186,7 @@ void check_args(int argc, const char* argv[]) {
         if (*endptr != '\0' || endptr == argv[2]) {
             cout << "The frequency you entered is not a double. Using default frequency 440 Hz." << endl;
             g_freq = 440;
-        } 
+        }
 
         // if no width given, use default width
         if (argc == 3) cout << "No width given. Using 0.5 as default width." << endl;
@@ -211,6 +211,8 @@ void check_args(int argc, const char* argv[]) {
             cout << "--input is the only acceptable flag after the frequency and width arguments." << endl;
             cout << " args must be in order: ./sig_gen [type] [frequency] [width] --input" << endl;
             exit(1);
+        } else {
+            flag = true;
         }
     }
 }
@@ -223,13 +225,13 @@ void check_args(int argc, const char* argv[]) {
  * @param argv Array of strings containing command line arguments.
  */
 int determine_signal(int argc, const char *argv[]) {
-    
+
     // checks command line arguments other than waveform type
     check_args(argc, argv);
 
     string arg = string(argv[1]);
 
-    /* check second argument: type of waveform */ 
+    /* check second argument: type of waveform */
 
     // sine
     if (arg == "--sine") {
@@ -254,7 +256,7 @@ int determine_signal(int argc, const char *argv[]) {
     //impulse
     else if (arg == "--impulse") {
         return 5;
-    } 
+    }
 
     // arg is some other input not defined by this program
     else {
