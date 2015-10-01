@@ -256,8 +256,8 @@ int check_args(int argc, const char* argv[]) {
             // check for frequency
             else {
                 g_freq = strtod(argv[2], &endptr);
-                if (*endptr != '\0' || endptr == argv[2]) {
-                    cout << "The frequency you entered is not a double." << endl;
+                if (*endptr != '\0' || endptr == argv[2] || g_freq <= 0) {
+                    cout << "The frequency you entered is not a double above 0." << endl;
                     return -1;
                 }
             }
@@ -308,7 +308,7 @@ int main(int argc, char const *argv[]) {
     // instantiate RtAudio object
     RtAudio *audio = new RtAudio(RtAudio::MACOSX_CORE);
 
-    // apply the width mutliplier
+    // apply the width mutliplier (1 by default)
     g_width *= WIDTH_MULTIPLIER;
 
     // frame size
