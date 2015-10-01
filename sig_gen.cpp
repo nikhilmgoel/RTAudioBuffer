@@ -334,10 +334,6 @@ int main(int argc, char const *argv[]) {
     oParams.nChannels = MY_CHANNELS;
     oParams.firstChannel = 0;
 
-    // #############testing purposes############
-    printf("%u\n", iParams.deviceId);
-    printf("%u\n", audio->getDeviceCount());
-
     // create stream options
     RtAudio::StreamOptions options;
 
