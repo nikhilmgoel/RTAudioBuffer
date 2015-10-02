@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // name: sig_gen.cpp
-// desc: real-time waveforms!
+// desc: real-time audio buffer!
 //
 // author: Nikhil Goel (nmgoel@stanford.edu)
 //   date: fall 2015, Music256a taught by Ge Wang (righteous!)
@@ -33,9 +33,6 @@ using namespace std;
 #define MIN_AMP -1.0
 #define BASELINE 0
 
-// a width multiplier to elongate the sound of the waves
-#define WIDTH_MULTIPLIER 1
-
 /* ----------------------globals--------------------- */
 
 // frequency
@@ -50,7 +47,7 @@ SAMPLE g_width = 0.5;
 // type of signal requested by user, enumerated in function determine_signal
 int g_sig = 0;
 
-// --input flag
+// --input flag (default turned off)
 bool flag = false;
 
 /*---------------------------------------------------- */
@@ -86,7 +83,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          // stderr prints info and err messages (info about callback here)
          cerr << ".";
 
-         // output buffer and input bufferpoints to array of SAMPLEs
+         // output buffer and input buffer point to array of SAMPLEs
          SAMPLE *buffer = (SAMPLE *) outputBuffer;
          SAMPLE *ibuffer = (SAMPLE *) inputBuffer;
 
@@ -157,10 +154,9 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                     return 2;
             }
 
-            // one ring to modulate them all (multiplies audio input by wave)
+            // ring modulation if --input flag specified (multiplies wave output by input)
             if (flag) 
                 buffer[i * MY_CHANNELS] *= ibuffer[i * MY_CHANNELS];
-                //buffer[i * MY_CHANNELS] *= ibuffer[i * MY_CHANNELS + 1];
 
             // copy signal into odd-indexed slots of the buffer
             for(int j = 1; j < MY_CHANNELS; j++)
@@ -264,7 +260,7 @@ int check_args(int argc, const char* argv[]) {
             }
 
             // no width given, use default width
-            cout << "No width given. Using 0.5 as default width." << endl;
+            if (argc == 3) cout << "No width given. Using 0.5 as default width." << endl;
         }
         
         // check fourth argument: width
@@ -308,9 +304,6 @@ int main(int argc, char const *argv[]) {
 
     // instantiate RtAudio object
     RtAudio *audio = new RtAudio(RtAudio::MACOSX_CORE);
-
-    // apply the width mutliplier (1 by default)
-    g_width *= WIDTH_MULTIPLIER;
 
     // frame size
     unsigned int bufferFrames = 512;
