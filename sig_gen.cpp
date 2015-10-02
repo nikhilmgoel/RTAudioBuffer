@@ -86,7 +86,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
          // stderr prints info and err messages (info about callback here)
          cerr << ".";
 
-         // outputBuffer points to array of SAMPLEs
+         // output buffer and input bufferpoints to array of SAMPLEs
          SAMPLE *buffer = (SAMPLE *) outputBuffer;
          SAMPLE *ibuffer = (SAMPLE *) inputBuffer;
 
@@ -155,19 +155,19 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
                 // if none of the above, stop the stream immediately.
                 default:
                     return 2;
-
-                // one ring to modulate them all (multiplies audio input by wave)
-                if (flag) {
-                    buffer[i * MY_CHANNELS] *= ibuffer[i * MY_CHANNELS];
-                }
             }
 
-             // copy signal into odd-indexed slots of the buffer
-             for(int j = 1; j < MY_CHANNELS; j++)
+            // one ring to modulate them all (multiplies audio input by wave)
+            if (flag) 
+                buffer[i * MY_CHANNELS] *= ibuffer[i * MY_CHANNELS];
+                //buffer[i * MY_CHANNELS] *= ibuffer[i * MY_CHANNELS + 1];
+
+            // copy signal into odd-indexed slots of the buffer
+            for(int j = 1; j < MY_CHANNELS; j++)
                  buffer[i * MY_CHANNELS + j] = buffer[i * MY_CHANNELS];
 
-             // increment sample number
-             g_t += 1.0;
+            // increment sample number
+            g_t += 1.0;
          }
          return 0;
 }
@@ -178,6 +178,7 @@ int audio_callback(void *outputBuffer, void *inputBuffer, unsigned int numFrames
             for the different waveforms.
  * @param argc Number of command line arguments.
  * @param argv Array of strings containing command line arguments.
+ * @return Int to inform program which waveform is being requested.
  */
 int determine_signal(int argc, const char *type) {
 
@@ -219,7 +220,7 @@ int determine_signal(int argc, const char *type) {
  * @funtion check_args Provides error-checking and robustness on command line arguments given by a user.
  * @param argc Number of command line arguments.
  * @param arg Array of strings containing command line arguments.
- * @return -1 if any errors. Returns integer between and including 1 and 5 if there the args are properly formed.
+ * @return An integer in range [1,5] signifying the signal. Returns -1 if there are any argument errors. 
  */
 int check_args(int argc, const char* argv[]) {
 
